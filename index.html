@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>דשבורד תפעולי - דומינוס</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #090909;
+  --card: #111111;
+  --card2: #161616;
+  --border: #1e1e1e;
+  --red: #E31837;
+  --blue: #0033A0;
+  --blue-light: #1a4fd6;
+  --gold: #F5A623;
+  --green: #4ade80;
+  --muted: #444;
+  --text: #e8e8e8;
+  --sub: #666;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Heebo', sans-serif; min-height: 100vh; }
+
+/* HEADER */
+.header { background: #0a0a0a; border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-dot { width: 28px; height: 28px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.logo-text { font-size: 15px; font-weight: 900; color: #fff; letter-spacing: -0.3px; }
+.logo-sub { font-size: 10px; color: var(--sub); font-weight: 400; }
+.header-meta { font-size: 11px; color: var(--sub); text-align: left; }
+.header-meta b { color: var(--red); }
+
+/* MAIN TABS */
+.main-tabs { background: #0a0a0a; border-bottom: 2px solid var(--border); display: flex; padding: 0 20px; gap: 2px; }
+.main-tab { background: none; border: none; color: var(--sub); font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 700; padding: 14px 20px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+.main-tab:hover { color: #fff; }
+.main-tab.active { color: #fff; border-bottom-color: var(--red); }
+
+/* CONTENT */
+.content { padding: 20px 24px; max-width: 1400px; margin: 0 auto; display: none; }
+.content.active { display: block; }
+
+/* CONTROLS BAR */
+.controls { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.controls label { font-size: 11px; color: var(--sub); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+select, .date-input { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 7px 12px; border-radius: 8px; font-family: 'Heebo', sans-serif; font-size: 12px; cursor: pointer; outline: none; }
+select:hover, .date-input:hover { border-color: #333; }
+.btn { background: var(--red); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-family: 'Heebo', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
+.btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 7px 14px; border-radius: 8px; font-family: 'Heebo', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-outline.active { border-color: var(--red); color: var(--red); }
+
+/* KPI GRID */
+.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; position: relative; overflow: hidden; }
+.kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:14px 14px 0 0; }
+.kpi-card.blue::before { background: var(--blue-light); }
+.kpi-card.red::before { background: var(--red); }
+.kpi-card.gold::before { background: var(--gold); }
+.kpi-card.green::before { background: var(--green); }
+.kpi-icon { font-size: 20px; margin-bottom: 8px; }
+.kpi-val { font-size: 28px; font-weight: 900; color: #fff; line-height: 1; margin-bottom: 4px; }
+.kpi-label { font-size: 11px; color: var(--sub); margin-bottom: 8px; }
+.kpi-delta { display: flex; gap: 8px; flex-wrap: wrap; }
+.delta-badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+.delta-up { background: rgba(74,222,128,0.1); color: var(--green); }
+.delta-down { background: rgba(227,24,55,0.1); color: var(--red); }
+.delta-neutral { background: rgba(100,100,100,0.1); color: var(--sub); }
+
+/* CHARTS GRID */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.charts-grid.full { grid-template-columns: 1fr; }
+.chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+.chart-title { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.chart-title .sub { font-size: 11px; color: var(--sub); font-weight: 400; margin-right: auto; }
+canvas { width: 100% !important; }
+
+/* ALERTS */
+.alerts-section { margin-bottom: 20px; }
+.alert-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.alert-item.danger { border-right: 3px solid var(--red); }
+.alert-item.warning { border-right: 3px solid var(--gold); }
+.alert-item.good { border-right: 3px solid var(--green); }
+.alert-icon { font-size: 18px; flex-shrink: 0; }
+.alert-text { font-size: 12px; color: var(--text); flex: 1; }
+.alert-text b { color: #fff; }
+.alert-val { font-size: 13px; font-weight: 900; }
+
+/* COMPARE TABLE */
+.compare-section { margin-bottom: 20px; }
+.compare-day-selector { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.day-btn { background: var(--card); border: 1px solid var(--border); color: var(--sub); padding: 6px 14px; border-radius: 8px; font-family: 'Heebo', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
+.day-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.day-btn.weekend { border-color: #2a2a2a; }
+.day-btn.weekend.active { background: var(--gold); border-color: var(--gold); color: #000; }
+
+/* MONTHLY SECTIONS */
+.monthly-section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+.monthly-section-title { font-size: 13px; font-weight: 900; color: #fff; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+.monthly-table { width: 100%; border-collapse: collapse; font-size: 12px; overflow-x: auto; display: block; }
+.monthly-table th { text-align: center; padding: 8px 10px; color: var(--sub); font-weight: 700; border-bottom: 1px solid var(--border); white-space: nowrap; font-size: 11px; }
+.monthly-table th:first-child { text-align: right; }
+.monthly-table td { text-align: center; padding: 8px 10px; border-bottom: 1px solid #0f0f0f; white-space: nowrap; color: var(--sub); }
+.monthly-table td:first-child { text-align: right; color: #888; font-size: 11px; }
+.monthly-table tr:last-child td { border-bottom: none; }
+.monthly-table td.current { color: #fff; font-weight: 900; }
+.monthly-table td.highlight-up { color: var(--green); font-weight: 700; }
+.monthly-table td.highlight-down { color: var(--red); font-weight: 700; }
+.trend-arrow { font-size: 10px; margin-right: 4px; }
+
+/* INSIGHTS */
+.insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.insight-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+.insight-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.insight-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.insight-icon.blue { background: rgba(0,51,160,0.2); }
+.insight-icon.red { background: rgba(227,24,55,0.15); }
+.insight-icon.gold { background: rgba(245,166,35,0.15); }
+.insight-icon.green { background: rgba(74,222,128,0.1); }
+.insight-title { font-size: 13px; font-weight: 800; color: #fff; }
+.insight-subtitle { font-size: 11px; color: var(--sub); }
+.insight-body { font-size: 12px; color: #999; line-height: 1.7; }
+.insight-body b { color: var(--text); }
+.insight-body .pill { display: inline-block; background: #1a1a1a; border-radius: 4px; padding: 2px 7px; font-size: 11px; margin: 2px; font-weight: 700; }
+.insight-body .pill.red { color: var(--red); }
+.insight-body .pill.green { color: var(--green); }
+.insight-body .pill.gold { color: var(--gold); }
+
+@media(max-width:768px){
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .insights-grid { grid-template-columns: 1fr; }
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+  padding: 2px;
+}
+input[type="date"]::-webkit-inner-spin-button { display: none; }
+input[type="date"] { color-scheme: dark; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-dot">🍕</div>
+    <div>
+      <div class="logo-text">דשבורד תפעולי</div>
+      <div class="logo-sub">מוקד שירות דומינוס</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    נתונים עד: <b id="last-date">—</b> · 
+    <span id="last-time">—</span>
+  </div>
+</div>
+
+<div class="main-tabs">
+  <button class="main-tab active" onclick="switchTab('daily',this)">📊 יומי</button>
+  <button class="main-tab" onclick="switchTab('monthly',this)">📈 חודשי</button>
+  <button class="main-tab" onclick="switchTab('insights',this)">💡 תובנות</button>
+</div>
+
+<!-- ===== DAILY TAB ===== -->
+<div class="content active" id="tab-daily">
+  <div class="controls" style="gap:12px;align-items:center">
+    <label>📅 תקופה:</label>
+    <span style="font-size:11px;color:var(--sub)">מ:</span>
+    <input type="date" id="date-from" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-family:'Heebo';font-size:13px;outline:none;color-scheme:dark">
+    <span style="font-size:11px;color:var(--sub)">עד:</span>
+    <input type="date" id="date-to" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-family:'Heebo';font-size:13px;outline:none;color-scheme:dark">
+    <button class="btn" onclick="applyDateRange()">🔍 הצג</button>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" id="daily-kpis"></div>
+
+  <!-- Alerts -->
+  <div class="alerts-section">
+    <div class="chart-title" style="margin-bottom:12px">🚨 התראות חריגות</div>
+    <div id="daily-alerts"></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">📞 שיחות נכנסות <span class="sub">לפי יום</span></div>
+      <canvas id="chart-calls" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">✅ אחוז מענה <span class="sub">לפי יום</span></div>
+      <canvas id="chart-answer" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">💬 קריאות דיגיטל <span class="sub">לפי יום</span></div>
+      <canvas id="chart-digital" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">⭐ ממוצע סקר <span class="sub">לפי יום</span></div>
+      <canvas id="chart-score" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">⏱️ זמן תגובה <span class="sub">בדקות</span></div>
+      <canvas id="chart-response" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">🍕 ממוצע הזמנות <span class="sub">מוקד vs רשת</span></div>
+      <canvas id="chart-orders" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Day vs Day Compare -->
+  <div class="compare-section">
+    <div class="chart-title" style="margin-bottom:12px">📅 השוואת יום מול יום (ממוצע לפי יום בשבוע)</div>
+    <div class="charts-grid full">
+      <div class="chart-card">
+        <canvas id="chart-daycompare" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MONTHLY TAB ===== -->
+<div class="content" id="tab-monthly">
+  <div class="controls" style="gap:12px;align-items:center;flex-wrap:wrap">
+    <label>📅 חודש:</label>
+    <select id="month-picker" onchange="renderMonthly()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-family:'Heebo';font-size:13px;outline:none;min-width:140px"></select>
+    <div style="width:1px;height:24px;background:var(--border)"></div>
+    <label>הצג טבלה:</label>
+    <select id="month-range" onchange="renderMonthly()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-family:'Heebo';font-size:13px;outline:none">
+      <option value="6">6 חודשים</option>
+      <option value="12" selected>12 חודשים</option>
+      <option value="24">24 חודשים</option>
+    </select>
+  </div>
+
+  <!-- Monthly KPI Cards -->
+  <div class="kpi-grid" id="monthly-kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px"></div>
+  <!-- Monthly Tables -->
+  <div id="monthly-sections"></div>
+</div>
+
+<!-- ===== INSIGHTS TAB ===== -->
+<div class="content" id="tab-insights">
+  <div style="margin-bottom:20px">
+    <div class="chart-title">💡 המלצות ותובנות אוטומטיות</div>
+    <div style="font-size:11px;color:var(--sub);margin-top:4px">מחושב על בסיס הנתונים האחרונים</div>
+  </div>
+  <div class="insights-grid" id="insights-grid"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ===== DATA =====
+let RAW = null;
+
+// D and M loaded after fetch
+// Active days filter (0=Sun...6=Sat in JS, but our data uses Python weekday 0=Mon)
+// dayIdx: 0=Mon,1=Tue,2=Wed,3=Thu,4=Fri,5=Sat,6=Sun
+// Display: ראשון=6, שני=0, שלישי=1, רביעי=2, חמישי=3, שישי=4, שבת=5
+const DAY_MAP = {0:1,1:2,2:3,3:4,4:5,5:6,6:0}; // display btn idx -> dayIdx
+const DAY_HEB = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+
+let rangeLen = 30;
+
+// SUM vs AVG metrics
+const SUM_METRICS = new Set(['סה"כ שיחות נכנסות','סה"כ שיחות נענות','כמות קריאות כוללת','שעות עבודה בפועל','תכנון שעות עבודה','שעות עבודה נציגים בפועל']);
+
+function timeToMinutes(t) {
+  if(typeof t !== 'string') return null;
+  const p = t.split(':');
+  if(p.length < 2) return null;
+  return parseInt(p[0])*60 + parseInt(p[1]) + (p[2] ? parseInt(p[2])/60 : 0);
+}
+
+function minutesToTime(m) {
+  const h = Math.floor(m/60), mn = Math.floor(m%60), s = Math.round((m%1)*60);
+  return `${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+const TIME_METRICS = new Set(['ממוצע זמן תגובה']);
+
+function calcRange(m, from, to) {
+  if(!m) return null;
+  const isTime = TIME_METRICS.has(m.name.trim());
+  const vals = [];
+  for(let i = from; i <= to && i < m.vals.length; i++) {
+    const v = m.vals[i];
+    if(v === null || v === undefined) continue;
+    if(isTime) {
+      const mins = timeToMinutes(v);
+      if(mins !== null) vals.push(mins);
+    } else if(!isNaN(v)) {
+      vals.push(v);
+    }
+  }
+  if(!vals.length) return null;
+  const isSum = SUM_METRICS.has(m.name.trim());
+  const result = isSum ? vals.reduce((a,b)=>a+b,0) : vals.reduce((a,b)=>a+b,0)/vals.length;
+  return isTime ? minutesToTime(result) : result;
+}
+let dateFrom = null; // index in D.dates
+let dateTo = null;   // index in D.dates
+let charts = {};
+
+// ===== HELPERS =====
+function getMetric(name) {
+  return D.metrics.find(m => m.name.trim() === name.trim());
+}
+function getMonthMetric(secTitle, metricName) {
+  const sec = M.sections.find(s => s.title.includes(secTitle));
+  if(!sec) return null;
+  const m = sec.metrics.find(m => m.name.trim() === metricName.trim());
+  return m ? m.vals : null;
+}
+
+function filteredIndices() {
+  const total = D.dates.length;
+  const start = (dateFrom !== null) ? dateFrom : Math.max(0, total - 30);
+  const end = (dateTo !== null) ? dateTo + 1 : total;
+  const indices = [];
+  for(let i = start; i < end; i++) indices.push(i);
+  return indices;
+}
+
+function dateStrToIndex(dateStr) {
+  // dateStr format: yyyy-mm-dd (from input[type=date])
+  const parts = dateStr.split('-');
+  const target = parts[2]+'/'+parts[1]+'/'+parts[0];
+  // Find closest index
+  for(let i=0; i<D.dates.length; i++) {
+    if(D.dates[i] === target) return i;
+  }
+  // Find nearest
+  const ts = new Date(dateStr).getTime();
+  let best = 0, bestDiff = Infinity;
+  D.dates.forEach((d, i) => {
+    const p = d.split('/');
+    const dt = new Date(p[2]+'-'+p[1]+'-'+p[0]).getTime();
+    const diff = Math.abs(dt - ts);
+    if(diff < bestDiff) { bestDiff = diff; best = i; }
+  });
+  return best;
+}
+
+function applyDateRange() {
+  const fromVal = document.getElementById('date-from').value;
+  const toVal = document.getElementById('date-to').value;
+  if(fromVal) dateFrom = dateStrToIndex(fromVal);
+  if(toVal) dateTo = dateStrToIndex(toVal);
+  Object.keys(charts).forEach(k => { if(charts[k]) { charts[k].destroy(); delete charts[k]; }});
+  renderDaily();
+}
+function fmt(v, type) {
+  if(v === null || v === undefined) return '—';
+  if(type === 'pct') return (v*100).toFixed(1) + '%';
+  if(type === 'time') return typeof v === 'string' ? v.slice(0,5) : v;
+  if(type === 'currency') return '₪' + Math.round(v).toLocaleString();
+  if(Number.isInteger(v)) return v.toLocaleString();
+  return parseFloat(v).toLocaleString('he-IL', {maximumFractionDigits:2});
+}
+
+function delta(curr, prev, higherBetter=true) {
+  if(curr === null || prev === null || prev === 0) return null;
+  const pct = ((curr - prev) / Math.abs(prev) * 100).toFixed(1);
+  const up = curr > prev;
+  const good = higherBetter ? up : !up;
+  return { pct: Math.abs(pct), up, good };
+}
+
+function deltaHTML(d, label='') {
+  if(!d) return '';
+  const cls = d.good ? 'delta-up' : 'delta-down';
+  const arrow = d.up ? '▲' : '▼';
+  return `<span class="delta-badge ${cls}">${arrow}${d.pct}% ${label}</span>`;
+}
+
+function avg(arr) {
+  const vals = arr.filter(v => v !== null && v !== undefined && !isNaN(v));
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+}
+
+function makeChart(id, type, labels, datasets, options={}) {
+  if(charts[id]) { 
+    charts[id].destroy(); 
+    delete charts[id];
+  }
+  // Replace canvas to avoid Chart.js reuse issues
+  const oldCanvas = document.getElementById(id);
+  const parent = oldCanvas.parentNode;
+  const newCanvas = document.createElement('canvas');
+  newCanvas.id = id;
+  newCanvas.height = oldCanvas.height || 200;
+  parent.replaceChild(newCanvas, oldCanvas);
+  const ctx = newCanvas.getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type,
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: datasets.length > 1, labels: { color:'#666', font:{size:11} } }, tooltip: { mode:'index', intersect:false } },
+      scales: {
+        x: { ticks:{ color:'#444', maxRotation:45, font:{size:10}, maxTicksLimit:15 }, grid:{ color:'#111' } },
+        y: { ticks:{ color:'#444', font:{size:11} }, grid:{ color:'#111' }, ...options.y }
+      },
+      ...options
+    }
+  });
+}
+
+// ===== DAILY =====
+function renderDaily() {
+  const idx = filteredIndices();
+  const labels = idx.map(i => D.dates[i].slice(0,5)); // dd/mm
+
+  // Get metrics
+  const calls = getMetric('סה"כ שיחות נכנסות');
+  const answered = getMetric('סה"כ שיחות נענות');
+  const answerPct = getMetric('אחוז מענה כולל');
+  const digital = getMetric('כמות קריאות כוללת');
+  const score = getMetric('ממוצע סקרים');
+  const efficiency = getMetric('יעילות עובדים');
+  const responseTime = getMetric('ממוצע זמן תגובה');
+  const orderMoked = getMetric('ממוצע הזמנות משלוח - מוקד (דיגיטל)');
+  const orderNetwork = getMetric('ממוצע הזמנות משלוח - רשת');
+
+  // KPIs: average over selected range vs previous equivalent period
+  const rangeSize = idx.length;
+  const startI = idx.length > 0 ? idx[0] : 0;
+  const endI = idx.length > 0 ? idx[idx.length-1] : D.dates.length-1;
+
+
+
+  const prevStart = Math.max(0, startI - rangeSize);
+  const prevEnd = Math.max(0, startI - 1);
+  const weekStart = Math.max(0, startI - 7);
+  const weekEnd = Math.max(0, endI - 7);
+
+  function lastVal(m) { return calcRange(m, startI, endI); }
+  function prevVal(m) { return calcRange(m, prevStart, prevEnd); }
+  function weekAgoVal(m) { return calcRange(m, weekStart, weekEnd); }
+
+  const lastI = endI;
+
+  // KPI Cards
+  const refund = getMetric('ממוצע זיכויים לפניה');
+  const hours = getMetric('שעות עבודה בפועל');
+  const hoursPlanned = getMetric('תכנון שעות עבודה');
+
+  const kpiData = [
+    { label:'סה"כ שיחות נכנסות', val:lastVal(calls), prev:prevVal(calls), weekAgo:weekAgoVal(calls), icon:'📞', color:'blue', higher:false },
+    { label:'אחוז מענה', val:lastVal(answerPct), prev:prevVal(answerPct), weekAgo:weekAgoVal(answerPct), icon:'✅', color:'green', higher:true, isPct:true },
+    { label:'ממוצע זיכוי לפניה', val:lastVal(refund), prev:prevVal(refund), weekAgo:weekAgoVal(refund), icon:'💸', color:'gold', higher:false },
+    { label:'שעות עבודה בפועל', val:lastVal(hours), prev:prevVal(hours), weekAgo:weekAgoVal(hours), planned:lastVal(hoursPlanned), icon:'⏰', color:'red', higher:true },
+    { label:'קריאות דיגיטל', val:lastVal(digital), prev:prevVal(digital), weekAgo:weekAgoVal(digital), icon:'💬', color:'blue', higher:false },
+    { label:'ממוצע סקר', val:lastVal(score), prev:prevVal(score), weekAgo:weekAgoVal(score), icon:'⭐', color:'gold', higher:true },
+    { label:'זמן תגובה ממוצע', 
+      val:lastVal(responseTime), 
+      prev:prevVal(responseTime), 
+      weekAgo:weekAgoVal(responseTime), 
+      valNum: timeToMinutes(lastVal(responseTime)),
+      prevNum: timeToMinutes(prevVal(responseTime)),
+      weekAgoNum: timeToMinutes(weekAgoVal(responseTime)),
+      icon:'⏱️', color:'blue', higher:false, isTime:true },
+    { label:'ממוצע הזמנה - מוקד', val:lastVal(orderMoked), prev:prevVal(orderMoked), weekAgo:weekAgoVal(orderMoked), icon:'🍕', color:'red', higher:true },
+    { label:'ממוצע הזמנה - רשת', val:lastVal(orderNetwork), prev:prevVal(orderNetwork), weekAgo:weekAgoVal(orderNetwork), icon:'🌐', color:'gold', higher:true },
+  ];
+
+  document.getElementById('daily-kpis').innerHTML = kpiData.map(k => {
+    const v1 = k.isTime ? k.valNum : k.val;
+    const p1 = k.isTime ? k.prevNum : k.prev;
+    const w1 = k.isTime ? k.weekAgoNum : k.weekAgo;
+    const d1 = delta(v1, p1, k.higher);
+    const d2 = delta(v1, w1, k.higher);
+    const displayVal = k.val === null || k.val === undefined ? '—' : k.isPct ? fmt(k.val,'pct') : k.isTime ? (typeof k.val === 'string' ? k.val : fmt(k.val,'time')) : fmt(k.val);
+    // Planned vs actual badge
+    let plannedBadge = '';
+    if(k.planned !== null && k.planned !== undefined && k.val !== null) {
+      const dp = delta(k.val, k.planned, true);
+      const diff = k.val - k.planned;
+      const diffFmt = (diff > 0 ? '+' : '') + Math.round(diff);
+      if(dp) plannedBadge = `<span class="delta-badge ${dp.good?'delta-up':'delta-down'}">${dp.up?'▲':'▼'}${dp.pct}% (${diffFmt}) מתכנון</span>`;
+    }
+    return `<div class="kpi-card ${k.color}">
+      <div class="kpi-icon">${k.icon}</div>
+      <div class="kpi-val">${displayVal}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-delta">
+        ${deltaHTML(d1,'מאמש')}
+        ${deltaHTML(d2,'משבוע')}
+        ${plannedBadge}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Alerts
+  renderAlerts(startI, endI, weekStart, weekEnd);
+
+  // Charts
+  if(calls && idx.length) {
+    const callsVals = idx.map(i => calls.vals[i]);
+    makeChart('chart-calls', 'bar', labels, [{
+      label:'שיחות נכנסות', data:callsVals,
+      backgroundColor:'rgba(0,51,160,0.5)', borderColor:'rgba(26,79,214,0.8)', borderWidth:1, borderRadius:4
+    }]);
+  }
+
+  if(answerPct && idx.length) {
+    const pctVals = idx.map(i => answerPct.vals[i] !== null ? (answerPct.vals[i]*100).toFixed(1) : null);
+    makeChart('chart-answer', 'line', labels, [{
+      label:'% מענה', data:pctVals,
+      borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,0.08)', fill:true, tension:0.3, pointRadius:0
+    }], { y:{ min:0, max:100 } });
+  }
+
+  if(digital && idx.length) {
+    const digVals = idx.map(i => digital.vals[i]);
+    makeChart('chart-digital', 'bar', labels, [{
+      label:'קריאות', data:digVals,
+      backgroundColor:'rgba(245,166,35,0.4)', borderColor:'rgba(245,166,35,0.8)', borderWidth:1, borderRadius:4
+    }]);
+  }
+
+  if(score && idx.length) {
+    const scoreVals = idx.map(i => score.vals[i] !== null ? parseFloat(score.vals[i]).toFixed(2) : null);
+    makeChart('chart-score', 'line', labels, [{
+      label:'סקר', data:scoreVals,
+      borderColor:'#E31837', backgroundColor:'rgba(227,24,55,0.08)', fill:true, tension:0.3, pointRadius:0
+    }], { y:{ min:1, max:5 } });
+  }
+
+  // Response time chart
+  if(responseTime && idx.length) {
+    const rtVals = idx.map(i => {
+      const v = responseTime.vals[i];
+      if(!v || typeof v !== 'string') return null;
+      const p = v.split(':');
+      return parseInt(p[0])*60 + parseInt(p[1]) + (p[2]?parseInt(p[2])/60:0);
+    });
+    makeChart('chart-response', 'line', labels, [{
+      label:'זמן תגובה (דקות)', data:rtVals,
+      borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.08)', fill:true, tension:0.3, pointRadius:0
+    }], { y:{ min:0 } });
+  }
+
+  // Orders chart
+  const orderMokedM = getMetric('ממוצע הזמנות משלוח - מוקד (דיגיטל)');
+  const orderNetworkM = getMetric('ממוצע הזמנות משלוח - רשת');
+  if((orderMokedM || orderNetworkM) && idx.length) {
+    const datasets = [];
+    if(orderMokedM) datasets.push({
+      label:'מוקד (דיגיטל)', data:idx.map(i => orderMokedM.vals[i]),
+      borderColor:'#E31837', backgroundColor:'rgba(227,24,55,0.08)', fill:false, tension:0.3, pointRadius:0
+    });
+    if(orderNetworkM) datasets.push({
+      label:'רשת', data:idx.map(i => orderNetworkM.vals[i]),
+      borderColor:'#F5A623', backgroundColor:'rgba(245,166,35,0.08)', fill:false, tension:0.3, pointRadius:0
+    });
+    makeChart('chart-orders', 'line', labels, datasets);
+  }
+
+  // Day vs Day comparison
+  renderDayCompare(calls, startI, endI);
+}
+
+function renderAlerts(startI, endI, weekStart, weekEnd) {
+  const alerts = [];
+
+  function check(name, threshold, label, higher, fmt_type) {
+    const m = getMetric(name);
+    if(!m) return;
+    const curr = calcRange(m, startI, endI);
+    const wk = calcRange(m, weekStart, weekEnd);
+    if(curr === null || wk === null || wk === 0) return;
+    const pct = (curr - wk) / Math.abs(wk) * 100;
+    const bad = higher ? pct < -threshold : pct > threshold;
+    const good = higher ? pct > threshold : pct < -threshold;
+    if(Math.abs(pct) > threshold) {
+      alerts.push({
+        type: good ? 'good' : bad ? 'danger' : 'warning',
+        icon: good ? '✅' : '⚠️',
+        text: `<b>${label}</b> — ${fmt(curr, fmt_type)} לעומת ${fmt(wk, fmt_type)} לפני שבוע`,
+        val: (pct > 0 ? '▲' : '▼') + Math.abs(pct).toFixed(1) + '%',
+        valColor: good ? '#4ade80' : '#E31837'
+      });
+    }
+  }
+
+  check('סה"כ שיחות נכנסות', 15, 'שיחות נכנסות', false, null);
+  check('אחוז מענה כולל', 5, 'אחוז מענה', true, 'pct');
+  check('כמות קריאות כוללת', 20, 'קריאות דיגיטל', false, null);
+  check('ממוצע סקרים', 3, 'ממוצע סקר', true, null);
+  check('יעילות עובדים', 10, 'יעילות עובדים', true, null);
+  check('אחוז זיכויים מהזמנות', 10, 'אחוז זיכויים', false, 'pct');
+
+  const el = document.getElementById('daily-alerts');
+  if(!alerts.length) {
+    el.innerHTML = '<div class="alert-item good"><div class="alert-icon">✅</div><div class="alert-text">אין חריגות משמעותיות — כל המדדים תקינים יחסית לשבוע שעבר</div></div>';
+    return;
+  }
+  el.innerHTML = alerts.map(a => `
+    <div class="alert-item ${a.type}">
+      <div class="alert-icon">${a.icon}</div>
+      <div class="alert-text">${a.text}</div>
+      <div class="alert-val" style="color:${a.valColor}">${a.val}</div>
+    </div>`).join('');
+}
+
+function renderDayCompare(callsMetric, startI, endI) {
+  if(!callsMetric) return;
+  const byDay = {0:[],1:[],2:[],3:[],4:[],5:[],6:[]};
+  for(let i = startI; i <= endI; i++) {
+    const di = D.dayIdx[i];
+    const v = callsMetric.vals[i];
+    if(v !== null) byDay[di].push(v);
+  }
+
+  // Map to display order: Sun(6->0), Mon(0->1)...Sat(5->6)
+  const displayOrder = [6,0,1,2,3,4,5]; // dayIdx order for display
+  const labels = DAY_HEB;
+  const avgs = displayOrder.map(di => {
+    const arr = byDay[di];
+    return arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
+  });
+
+  const colors = displayOrder.map((di,i) => 
+    i >= 5 ? 'rgba(245,166,35,0.6)' : 'rgba(0,51,160,0.6)'
+  );
+  const borderColors = displayOrder.map((di,i) => 
+    i >= 5 ? 'rgba(245,166,35,1)' : 'rgba(26,79,214,1)'
+  );
+
+  makeChart('chart-daycompare', 'bar', labels, [{
+    label:'ממוצע שיחות נכנסות לפי יום',
+    data: avgs,
+    backgroundColor: colors,
+    borderColor: borderColors,
+    borderWidth: 1,
+    borderRadius: 6
+  }]);
+}
+
+// ===== MONTHLY =====
+function initMonthPicker() {
+  const sel = document.getElementById('month-picker');
+  sel.innerHTML = '';
+  // Add months in reverse order (newest first)
+  [...M.months].reverse().forEach((m, i) => {
+    const realIdx = M.months.length - 1 - i;
+    sel.innerHTML += `<option value="${realIdx}">${m}</option>`;
+  });
+}
+
+function renderMonthly() {
+  const n = parseInt(document.getElementById('month-range').value);
+  const selectedI = parseInt(document.getElementById('month-picker').value);
+  
+  // KPI: selected month vs prev month vs same month last year
+  const prevI = Math.max(0, selectedI - 1);
+  const yearAgoI = Math.max(0, selectedI - 12);
+
+  // Table: show last n months up to selected
+  const tableEnd = selectedI;
+  const tableStart = Math.max(0, tableEnd - n + 1);
+  let filteredIdx = [];
+  for(let i = tableStart; i <= tableEnd; i++) filteredIdx.push(i);
+
+  const months = filteredIdx.map(i => M.months[i]);
+  const monthSlice = (vals) => vals ? filteredIdx.map(i => vals[i]) : [];
+
+  const lastN = M.months.length;
+  function mGet(secKey, metricName) {
+    const sec = M.sections.find(s => s.title.includes(secKey));
+    if(!sec) return null;
+    const m = sec.metrics.find(m => m.name.trim() === metricName.trim());
+    return m ? m.vals : null;
+  }
+
+  function mkpi(label, vals, icon, color, isPct, higherBetter=true, isTime=false) {
+    const curr = vals ? vals[selectedI] : null;
+    const p = vals ? vals[prevI] : null;
+    const ya = vals ? vals[yearAgoI] : null;
+    const vn = isTime ? timeToMinutes(curr) : curr;
+    const pn = isTime ? timeToMinutes(p) : p;
+    const yn = isTime ? timeToMinutes(ya) : ya;
+    const d1 = delta(vn, pn, higherBetter);
+    const d2 = delta(vn, yn, higherBetter);
+    const display = curr === null ? '—' : isTime ? (typeof curr==='string'?curr:fmt(curr,'time')) : isPct ? fmt(curr,'pct') : fmt(curr);
+    const prevMonth = M.months[prevI] || '';
+    const yearAgoMonth = M.months[yearAgoI] || '';
+    return `<div class="kpi-card ${color}">
+      <div class="kpi-icon">${icon}</div>
+      <div class="kpi-val">${display}</div>
+      <div class="kpi-label">${label}</div>
+      <div class="kpi-delta">
+        ${deltaHTML(d1, 'מ'+prevMonth)}
+        ${deltaHTML(d2, 'מ'+yearAgoMonth)}
+      </div>
+    </div>`;
+  }
+
+  const effVals = mGet('יעילות', 'יעילות עובדים');
+  const hoursVals = mGet('יעילות', 'שעות הפעלה (נציגים)');
+  const contactsVals = mGet('יעילות', 'כמות פניות שטופלו ע"י נציג');
+  const scoreVals = mGet('דיגיטל', 'ממוצע הסקר');
+  const refundVals = mGet('זיכוים', 'ממוצע זיכויים לפניה');
+  const responseTimeVals = mGet('דיגיטל', 'ממוצע זמן תגובה');
+  const answerVals = mGet('זמינות - תור', 'אחוז מענה');
+
+  const orderMokedM = mGet('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)');
+  const orderNetworkM = mGet('הזמנות', 'ממוצע הזמנות משלוח - רשת');
+  const boVals = mGet('BO', 'כמות קריאות שנסגרה');
+  const digitalVals = mGet('דיגיטל', 'כמות קריאות כוללת');
+
+  document.getElementById('monthly-kpis').innerHTML = [
+    mkpi('יעילות עובדים', effVals, '👥', 'blue', false, true),
+    mkpi('שעות הפעלה', hoursVals, '⏰', 'gold', false, true),
+    mkpi('פניות שטופלו', contactsVals, '📋', 'green', false, true),
+    mkpi('ממוצע סקר (דיגיטל)', scoreVals, '⭐', 'red', false, true),
+    mkpi('ממוצע זיכוי לפניה', refundVals, '💸', 'blue', false, false),
+    mkpi('אחוז מענה', answerVals, '✅', 'green', true, true),
+    mkpi('ממוצע הזמנה - מוקד', orderMokedM, '🍕', 'red', false, true),
+    mkpi('ממוצע הזמנה - רשת', orderNetworkM, '🌐', 'gold', false, true),
+    mkpi('קריאות דיגיטל', digitalVals, '💬', 'blue', false, false),
+    mkpi('זמן תגובה', responseTimeVals, '⏱️', 'gold', false, false, true),
+  ].join('');
+
+  // Sections tables
+  const el = document.getElementById('monthly-sections');
+  el.innerHTML = '';
+
+  M.sections.forEach(sec => {
+    if(!sec.metrics.length) return;
+    const div = document.createElement('div');
+    div.className = 'monthly-section';
+
+    let html = `<div class="monthly-section-title">${sec.title}</div>`;
+    html += '<div style="overflow-x:auto"><table class="monthly-table"><thead><tr><th>מדד</th>';
+    months.forEach(m => { html += `<th>${m}</th>`; });
+    html += '</tr></thead><tbody>';
+
+    sec.metrics.forEach(metric => {
+      const vals = monthSlice(metric.vals);
+      const lastVal = vals[vals.length-1];
+      const prevVal = vals[vals.length-2];
+      const yearAgoVal = metric.vals[metric.vals.length-1-12];
+
+      html += '<tr>';
+      html += `<td>${metric.name}</td>`;
+      vals.forEach((v, vi) => {
+        const isLast = vi === vals.length-1;
+        const isPrev = vi === vals.length-2;
+        let cls = isLast ? 'current' : '';
+        let d = isLast ? delta(v, prevVal, true) : null;
+        let arrow = '';
+        if(d) arrow = `<span class="trend-arrow">${d.up ? (d.good?'↑':'↑'):'↓'}</span>`;
+        html += `<td class="${cls}">${arrow}${v === null ? '—' : typeof v === 'number' && v < 1 && v > 0 ? fmt(v,'pct') : fmt(v)}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    div.innerHTML = html;
+    el.appendChild(div);
+  });
+}
+
+// ===== INSIGHTS =====
+function renderInsights() {
+  const insights = [];
+
+  // Helper: get metric val for a specific month index
+  function mVal(secKey, metricName, monthIdx) {
+    const sec = M.sections.find(s => s.title.includes(secKey));
+    if(!sec) return null;
+    const m = sec.metrics.find(m => m.name.trim() === metricName.trim());
+    if(!m || monthIdx < 0 || monthIdx >= m.vals.length) return null;
+    return m.vals[monthIdx];
+  }
+
+  const lastI = M.months.length - 1;
+  const prevMonthI = lastI - 1;           // last month
+  const yearAgoI = Math.max(0, lastI - 12); // same month last year
+
+  const curMonth = M.months[lastI];
+  const prevMonth = M.months[prevMonthI] || '';
+  const yearAgoMonth = M.months[yearAgoI] || '';
+
+  function pctDiff(curr, prev) {
+    if(!curr || !prev || prev === 0) return null;
+    return ((curr - prev) / Math.abs(prev) * 100).toFixed(1);
+  }
+
+  function arrow(pct, higherBetter=true) {
+    if(pct === null) return '';
+    const up = parseFloat(pct) > 0;
+    const good = higherBetter ? up : !up;
+    const cls = good ? 'green' : 'red';
+    return `<span class="pill ${cls}">${up?'▲':'▼'}${Math.abs(pct)}%</span>`;
+  }
+
+  // Insight 1: יעילות עובדים - month vs same month last year
+  const effCur = mVal('יעילות', 'יעילות עובדים', lastI);
+  const effPrev = mVal('יעילות', 'יעילות עובדים', prevMonthI);
+  const effYearAgo = mVal('יעילות', 'יעילות עובדים', yearAgoI);
+  if(effCur) {
+    const p1 = pctDiff(effCur, effPrev);
+    const p2 = pctDiff(effCur, effYearAgo);
+    insights.push({
+      icon:'👥', color:'blue', title:'יעילות עובדים', subtitle:`${curMonth} — השוואה חודשית`,
+      body:`<b>${curMonth}:</b> <span class="pill gold">${effCur.toFixed(2)}</span><br>
+            לעומת <b>${prevMonth}:</b> ${effPrev?.toFixed(2) || '—'} ${arrow(p1,true)}<br>
+            לעומת <b>${yearAgoMonth}:</b> ${effYearAgo?.toFixed(2) || '—'} ${arrow(p2,true)}<br>
+            ${p2 !== null ? (parseFloat(p2) > 0 ? '✅ שיפור לעומת השנה שעברה' : '⚠️ ירידה לעומת השנה שעברה') : ''}`
+    });
+  }
+
+  // Insight 2: אחוז מענה - month vs same month last year
+  const ansCur = mVal('תור', 'אחוז מענה', lastI);
+  const ansPrev = mVal('תור', 'אחוז מענה', prevMonthI);
+  const ansYearAgo = mVal('תור', 'אחוז מענה', yearAgoI);
+  if(ansCur) {
+    const p1 = pctDiff(ansCur, ansPrev);
+    const p2 = pctDiff(ansCur, ansYearAgo);
+    insights.push({
+      icon:'📞', color: parseFloat(p2||0) >= 0 ? 'green' : 'red',
+      title:'אחוז מענה', subtitle:`${curMonth} — השוואה חודשית`,
+      body:`<b>${curMonth}:</b> <span class="pill ${parseFloat(p2||0)>=0?'green':'red'}">${(ansCur*100).toFixed(1)}%</span><br>
+            לעומת <b>${prevMonth}:</b> ${ansPrev ? (ansPrev*100).toFixed(1)+'%' : '—'} ${arrow(p1,true)}<br>
+            לעומת <b>${yearAgoMonth}:</b> ${ansYearAgo ? (ansYearAgo*100).toFixed(1)+'%' : '—'} ${arrow(p2,true)}<br>
+            ${p2 !== null ? (parseFloat(p2) > 0 ? '✅ שיפור לעומת השנה שעברה' : '⚠️ ירידה לעומת השנה שעברה') : ''}`
+    });
+  }
+
+  // Insight 3: ממוצע סקר דיגיטל
+  const scoreCur = mVal('דיגיטל', 'ממוצע הסקר', lastI);
+  const scorePrev = mVal('דיגיטל', 'ממוצע הסקר', prevMonthI);
+  const scoreYearAgo = mVal('דיגיטל', 'ממוצע הסקר', yearAgoI);
+  if(scoreCur) {
+    const p1 = pctDiff(scoreCur, scorePrev);
+    const p2 = pctDiff(scoreCur, scoreYearAgo);
+    insights.push({
+      icon:'⭐', color: parseFloat(p2||0) >= 0 ? 'gold' : 'red',
+      title:'שביעות רצון לקוחות (דיגיטל)', subtitle:`${curMonth} — השוואה חודשית`,
+      body:`<b>${curMonth}:</b> <span class="pill gold">${scoreCur.toFixed(2)}</span><br>
+            לעומת <b>${prevMonth}:</b> ${scorePrev?.toFixed(2) || '—'} ${arrow(p1,true)}<br>
+            לעומת <b>${yearAgoMonth}:</b> ${scoreYearAgo?.toFixed(2) || '—'} ${arrow(p2,true)}<br>
+            ${scoreCur >= 4.0 ? '✅ ממוצע גבוה — שביעות רצון טובה' : scoreCur >= 3.5 ? '⚠️ ממוצע בינוני — יש מקום לשיפור' : '🔴 ממוצע נמוך — נדרשת בדיקה'}`
+    });
+  }
+
+  // Insight 4: ממוצע הזמנות - מוקד vs רשת, month vs year ago
+  const orderCur = mVal('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)', lastI);
+  const orderPrev = mVal('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)', prevMonthI);
+  const orderYearAgo = mVal('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)', yearAgoI);
+  const netCur = mVal('הזמנות', 'ממוצע הזמנות משלוח - רשת', lastI);
+  const netYearAgo = mVal('הזמנות', 'ממוצע הזמנות משלוח - רשת', yearAgoI);
+  if(orderCur) {
+    const p1 = pctDiff(orderCur, orderPrev);
+    const p2 = pctDiff(orderCur, orderYearAgo);
+    const pNet = pctDiff(netCur, netYearAgo);
+    insights.push({
+      icon:'🍕', color:'gold', title:'ממוצע הזמנות', subtitle:`${curMonth} — השוואה חודשית`,
+      body:`<b>מוקד ${curMonth}:</b> <span class="pill gold">₪${orderCur?.toFixed(0)}</span> ${arrow(p1,true)} מ${prevMonth}<br>
+            לעומת <b>${yearAgoMonth}:</b> ₪${orderYearAgo?.toFixed(0) || '—'} ${arrow(p2,true)}<br>
+            <b>רשת ${curMonth}:</b> ₪${netCur?.toFixed(0) || '—'} ${netYearAgo ? 'לעומת ₪'+netYearAgo.toFixed(0)+' '+arrow(pNet,true) : ''}<br>
+            ${p2 !== null ? (parseFloat(p2) > 0 ? '✅ עלייה בממוצע הזמנות' : '⚠️ ירידה בממוצע הזמנות') : ''}`
+    });
+  }
+
+  // Insight 5: זמן תגובה
+  function timeToMins(t) {
+    if(!t || typeof t !== 'string') return null;
+    const p = t.split(':'); return parseInt(p[0])*60 + parseInt(p[1]) + (p[2]?parseInt(p[2])/60:0);
+  }
+  const rtCurStr = mVal('דיגיטל', 'ממוצע זמן תגובה', lastI);
+  const rtPrevStr = mVal('דיגיטל', 'ממוצע זמן תגובה', prevMonthI);
+  const rtYearAgoStr = mVal('דיגיטל', 'ממוצע זמן תגובה', yearAgoI);
+  const rtCur = timeToMins(rtCurStr), rtPrev = timeToMins(rtPrevStr), rtYearAgo = timeToMins(rtYearAgoStr);
+  if(rtCurStr) {
+    const p1 = pctDiff(rtCur, rtPrev);
+    const p2 = pctDiff(rtCur, rtYearAgo);
+    insights.push({
+      icon:'⏱️', color: parseFloat(p2||0) <= 0 ? 'green' : 'red',
+      title:'זמן תגובה (דיגיטל)', subtitle:`${curMonth} — השוואה חודשית`,
+      body:`<b>${curMonth}:</b> <span class="pill ${parseFloat(p2||0)<=0?'green':'red'}">${rtCurStr}</span><br>
+            לעומת <b>${prevMonth}:</b> ${rtPrevStr || '—'} ${arrow(p1, false)}<br>
+            לעומת <b>${yearAgoMonth}:</b> ${rtYearAgoStr || '—'} ${arrow(p2, false)}<br>
+            ${p2 !== null ? (parseFloat(p2) < 0 ? '✅ שיפור בזמן תגובה' : '⚠️ עלייה בזמן התגובה — בדוק עומס') : ''}`
+    });
+  }
+
+  // Insight 6: זיכויים
+  const refCur = mVal('זיכוים', 'ממוצע זיכויים לפניה', lastI);
+  const refPrev = mVal('זיכוים', 'ממוצע זיכויים לפניה', prevMonthI);
+  const refYearAgo = mVal('זיכוים', 'ממוצע זיכויים לפניה', yearAgoI);
+  if(refCur) {
+    const p1 = pctDiff(refCur, refPrev);
+    const p2 = pctDiff(refCur, refYearAgo);
+    insights.push({
+      icon:'💸', color: parseFloat(p2||0) <= 0 ? 'green' : 'red',
+      title:'ממוצע זיכויים לפניה', subtitle:`${curMonth} — השוואה חודשית`,
+      body:`<b>${curMonth}:</b> <span class="pill ${parseFloat(p2||0)<=0?'green':'red'}">₪${refCur?.toFixed(2)}</span><br>
+            לעומת <b>${prevMonth}:</b> ₪${refPrev?.toFixed(2) || '—'} ${arrow(p1, false)}<br>
+            לעומת <b>${yearAgoMonth}:</b> ₪${refYearAgo?.toFixed(2) || '—'} ${arrow(p2, false)}<br>
+            ${p2 !== null ? (parseFloat(p2) < 0 ? '✅ ירידה בזיכויים — שיפור' : '⚠️ עלייה בזיכויים — בדוק גורמים') : ''}`
+    });
+  }
+
+  document.getElementById('insights-grid').innerHTML = insights.map(ins => `
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-icon ${ins.color}">${ins.icon}</div>
+        <div>
+          <div class="insight-title">${ins.title}</div>
+          <div class="insight-subtitle">${ins.subtitle}</div>
+        </div>
+      </div>
+      <div class="insight-body">${ins.body}</div>
+    </div>`).join('');
+}
+
+// ===== TAB SWITCHING =====
+function switchTab(tab, btn) {
+  document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab === 'daily') renderDaily();
+  else if(tab === 'monthly') renderMonthly();
+  else if(tab === 'insights') renderInsights();
+}
+
+
+
+
+
+// ===== INIT - FETCH FROM GOOGLE SHEETS =====
+const API_URL = 'https://script.google.com/macros/s/AKfycbxtLrQa6EhN_ZxqgtEmvtZn9buihWr2xf_mjwQT-EQY2LapUkuY_bzn6EtpQ29uljp1/exec';
+
+function initDashboard() {
+  const lastDate = D.dates[D.dates.length-1];
+  document.getElementById('last-date').textContent = lastDate;
+  initMonthPicker();
+  document.getElementById('last-time').textContent = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  const total = D.dates.length;
+  const lastDArr = D.dates[total-1].split('/');
+  const firstDArr = D.dates[Math.max(0,total-30)].split('/');
+  const toStr = lastDArr[2]+'-'+lastDArr[1]+'-'+lastDArr[0];
+  const fromStr = firstDArr[2]+'-'+firstDArr[1]+'-'+firstDArr[0];
+  document.getElementById('date-to').value = toStr;
+  document.getElementById('date-from').value = fromStr;
+  dateFrom = Math.max(0, total-30);
+  dateTo = total-1;
+  renderDaily();
+}
+
+// Show loader overlay
+const loader = document.createElement('div');
+loader.id = 'loader';
+loader.innerHTML = `
+  <div style="position:fixed;inset:0;background:#0a0a0a;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px">
+    <svg width="70" height="70" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="border-radius:12px;animation:spin 2s linear infinite">
+      <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
+      <rect width="80" height="80" rx="10" fill="#E31837"/>
+      <rect x="40" y="0" width="40" height="80" fill="#0033A0"/>
+      <circle cx="25" cy="30" r="9" fill="white"/>
+      <circle cx="55" cy="30" r="9" fill="white"/>
+      <circle cx="40" cy="55" r="9" fill="white"/>
+    </svg>
+    <div style="color:white;font-family:'Heebo',sans-serif;font-size:20px;font-weight:900">דשבורד דומינוס</div>
+    <div style="color:#aaa;font-size:14px">טוען נתונים מ-Google Sheets...</div>
+    <div id="load-err" style="color:#E31837;font-size:13px;display:none;max-width:300px;text-align:center"></div>
+  </div>`;
+document.body.appendChild(loader);
+
+fetch(API_URL)
+  .then(r => r.json())
+  .then(data => {
+    RAW = data;
+    D = RAW.daily;
+    M = RAW.monthly;
+    document.getElementById('loader').remove();
+    initDashboard();
+  })
+  .catch(err => {
+    const errEl = document.getElementById('load-err');
+    if(errEl) {
+      errEl.style.display = 'block';
+      errEl.textContent = 'שגיאה בטעינת נתונים. בדוק חיבור לאינטרנט. ' + err.message;
+    }
+  });
+</script>
+</body>
+</html>
