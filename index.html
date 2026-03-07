@@ -809,7 +809,16 @@ function renderInsights() {
     return `<span class="pill ${cls}">${up?'▲':'▼'}${Math.abs(pct)}%</span>`;
   }
 
-  // Insight 1: יעילות עובדים - month vs same month last year
+  function insightConclusion(p1, p2, higherBetter) {
+    const c1 = p1 !== null ? (higherBetter ? parseFloat(p1) > 0 : parseFloat(p1) < 0) : null;
+    const c2 = p2 !== null ? (higherBetter ? parseFloat(p2) > 0 : parseFloat(p2) < 0) : null;
+    let lines = [];
+    if(p1 !== null) lines.push(c1 ? `✅ שיפור לעומת החודש הקודם (${prevMonth})` : `⚠️ ירידה לעומת החודש הקודם (${prevMonth})`);
+    if(p2 !== null) lines.push(c2 ? `✅ שיפור לעומת אותו חודש אשתקד (${yearAgoMonth})` : `⚠️ ירידה לעומת אותו חודש אשתקד (${yearAgoMonth})`);
+    return lines.join('<br>');
+  }
+
+  // Insight 1: יעילות עובדים
   const effCur = mVal('יעילות', 'יעילות עובדים', lastI);
   const effPrev = mVal('יעילות', 'יעילות עובדים', prevMonthI);
   const effYearAgo = mVal('יעילות', 'יעילות עובדים', yearAgoI);
@@ -817,15 +826,16 @@ function renderInsights() {
     const p1 = pctDiff(effCur, effPrev);
     const p2 = pctDiff(effCur, effYearAgo);
     insights.push({
-      icon:'👥', color:'blue', title:'יעילות עובדים', subtitle:`${curMonth} — השוואה חודשית`,
+      icon:'👥', color: parseFloat(p2||p1||0) >= 0 ? 'blue' : 'red',
+      title:'יעילות עובדים', subtitle:`${curMonth} — השוואה חודשית ושנתית`,
       body:`<b>${curMonth}:</b> <span class="pill gold">${effCur.toFixed(2)}</span><br>
-            לעומת <b>${prevMonth}:</b> ${effPrev?.toFixed(2) || '—'} ${arrow(p1,true)}<br>
-            לעומת <b>${yearAgoMonth}:</b> ${effYearAgo?.toFixed(2) || '—'} ${arrow(p2,true)}<br>
-            ${p2 !== null ? (parseFloat(p2) > 0 ? '✅ שיפור לעומת השנה שעברה' : '⚠️ ירידה לעומת השנה שעברה') : ''}`
+            לעומת <b>${prevMonth}</b> (חודש קודם): ${effPrev?.toFixed(2) || '—'} ${arrow(p1,true)}<br>
+            לעומת <b>${yearAgoMonth}</b> (אשתקד): ${effYearAgo?.toFixed(2) || '—'} ${arrow(p2,true)}<br>
+            ${insightConclusion(p1, p2, true)}`
     });
   }
 
-  // Insight 2: אחוז מענה - month vs same month last year
+  // Insight 2: אחוז מענה
   const ansCur = mVal('תור', 'אחוז מענה', lastI);
   const ansPrev = mVal('תור', 'אחוז מענה', prevMonthI);
   const ansYearAgo = mVal('תור', 'אחוז מענה', yearAgoI);
@@ -833,12 +843,12 @@ function renderInsights() {
     const p1 = pctDiff(ansCur, ansPrev);
     const p2 = pctDiff(ansCur, ansYearAgo);
     insights.push({
-      icon:'📞', color: parseFloat(p2||0) >= 0 ? 'green' : 'red',
-      title:'אחוז מענה', subtitle:`${curMonth} — השוואה חודשית`,
-      body:`<b>${curMonth}:</b> <span class="pill ${parseFloat(p2||0)>=0?'green':'red'}">${(ansCur*100).toFixed(1)}%</span><br>
-            לעומת <b>${prevMonth}:</b> ${ansPrev ? (ansPrev*100).toFixed(1)+'%' : '—'} ${arrow(p1,true)}<br>
-            לעומת <b>${yearAgoMonth}:</b> ${ansYearAgo ? (ansYearAgo*100).toFixed(1)+'%' : '—'} ${arrow(p2,true)}<br>
-            ${p2 !== null ? (parseFloat(p2) > 0 ? '✅ שיפור לעומת השנה שעברה' : '⚠️ ירידה לעומת השנה שעברה') : ''}`
+      icon:'📞', color: parseFloat(p2||p1||0) >= 0 ? 'green' : 'red',
+      title:'אחוז מענה', subtitle:`${curMonth} — השוואה חודשית ושנתית`,
+      body:`<b>${curMonth}:</b> <span class="pill ${parseFloat(p2||p1||0)>=0?'green':'red'}">${(ansCur*100).toFixed(1)}%</span><br>
+            לעומת <b>${prevMonth}</b> (חודש קודם): ${ansPrev ? (ansPrev*100).toFixed(1)+'%' : '—'} ${arrow(p1,true)}<br>
+            לעומת <b>${yearAgoMonth}</b> (אשתקד): ${ansYearAgo ? (ansYearAgo*100).toFixed(1)+'%' : '—'} ${arrow(p2,true)}<br>
+            ${insightConclusion(p1, p2, true)}`
     });
   }
 
@@ -850,31 +860,34 @@ function renderInsights() {
     const p1 = pctDiff(scoreCur, scorePrev);
     const p2 = pctDiff(scoreCur, scoreYearAgo);
     insights.push({
-      icon:'⭐', color: parseFloat(p2||0) >= 0 ? 'gold' : 'red',
-      title:'שביעות רצון לקוחות (דיגיטל)', subtitle:`${curMonth} — השוואה חודשית`,
+      icon:'⭐', color: parseFloat(p2||p1||0) >= 0 ? 'gold' : 'red',
+      title:'שביעות רצון לקוחות (דיגיטל)', subtitle:`${curMonth} — השוואה חודשית ושנתית`,
       body:`<b>${curMonth}:</b> <span class="pill gold">${scoreCur.toFixed(2)}</span><br>
-            לעומת <b>${prevMonth}:</b> ${scorePrev?.toFixed(2) || '—'} ${arrow(p1,true)}<br>
-            לעומת <b>${yearAgoMonth}:</b> ${scoreYearAgo?.toFixed(2) || '—'} ${arrow(p2,true)}<br>
-            ${scoreCur >= 4.0 ? '✅ ממוצע גבוה — שביעות רצון טובה' : scoreCur >= 3.5 ? '⚠️ ממוצע בינוני — יש מקום לשיפור' : '🔴 ממוצע נמוך — נדרשת בדיקה'}`
+            לעומת <b>${prevMonth}</b> (חודש קודם): ${scorePrev?.toFixed(2) || '—'} ${arrow(p1,true)}<br>
+            לעומת <b>${yearAgoMonth}</b> (אשתקד): ${scoreYearAgo?.toFixed(2) || '—'} ${arrow(p2,true)}<br>
+            ${insightConclusion(p1, p2, true)}`
     });
   }
 
-  // Insight 4: ממוצע הזמנות - מוקד vs רשת, month vs year ago
+  // Insight 4: ממוצע הזמנות
   const orderCur = mVal('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)', lastI);
   const orderPrev = mVal('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)', prevMonthI);
   const orderYearAgo = mVal('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)', yearAgoI);
   const netCur = mVal('הזמנות', 'ממוצע הזמנות משלוח - רשת', lastI);
+  const netPrev = mVal('הזמנות', 'ממוצע הזמנות משלוח - רשת', prevMonthI);
   const netYearAgo = mVal('הזמנות', 'ממוצע הזמנות משלוח - רשת', yearAgoI);
   if(orderCur) {
     const p1 = pctDiff(orderCur, orderPrev);
     const p2 = pctDiff(orderCur, orderYearAgo);
-    const pNet = pctDiff(netCur, netYearAgo);
+    const pNet1 = pctDiff(netCur, netPrev);
+    const pNet2 = pctDiff(netCur, netYearAgo);
     insights.push({
-      icon:'🍕', color:'gold', title:'ממוצע הזמנות', subtitle:`${curMonth} — השוואה חודשית`,
-      body:`<b>מוקד ${curMonth}:</b> <span class="pill gold">₪${orderCur?.toFixed(0)}</span> ${arrow(p1,true)} מ${prevMonth}<br>
-            לעומת <b>${yearAgoMonth}:</b> ₪${orderYearAgo?.toFixed(0) || '—'} ${arrow(p2,true)}<br>
-            <b>רשת ${curMonth}:</b> ₪${netCur?.toFixed(0) || '—'} ${netYearAgo ? 'לעומת ₪'+netYearAgo.toFixed(0)+' '+arrow(pNet,true) : ''}<br>
-            ${p2 !== null ? (parseFloat(p2) > 0 ? '✅ עלייה בממוצע הזמנות' : '⚠️ ירידה בממוצע הזמנות') : ''}`
+      icon:'🍕', color:'gold', title:'ממוצע הזמנות', subtitle:`${curMonth} — השוואה חודשית ושנתית`,
+      body:`<b>מוקד ${curMonth}:</b> <span class="pill gold">₪${orderCur?.toFixed(0)}</span><br>
+            לעומת <b>${prevMonth}</b> (חודש קודם): ₪${orderPrev?.toFixed(0) || '—'} ${arrow(p1,true)}<br>
+            לעומת <b>${yearAgoMonth}</b> (אשתקד): ₪${orderYearAgo?.toFixed(0) || '—'} ${arrow(p2,true)}<br>
+            ${insightConclusion(p1, p2, true)}<br>
+            <b>רשת ${curMonth}:</b> ₪${netCur?.toFixed(0) || '—'} ${arrow(pNet1,true)} מ${prevMonth} | ${arrow(pNet2,true)} מ${yearAgoMonth}`
     });
   }
 
@@ -891,12 +904,12 @@ function renderInsights() {
     const p1 = pctDiff(rtCur, rtPrev);
     const p2 = pctDiff(rtCur, rtYearAgo);
     insights.push({
-      icon:'⏱️', color: parseFloat(p2||0) <= 0 ? 'green' : 'red',
-      title:'זמן תגובה (דיגיטל)', subtitle:`${curMonth} — השוואה חודשית`,
-      body:`<b>${curMonth}:</b> <span class="pill ${parseFloat(p2||0)<=0?'green':'red'}">${rtCurStr}</span><br>
-            לעומת <b>${prevMonth}:</b> ${rtPrevStr || '—'} ${arrow(p1, false)}<br>
-            לעומת <b>${yearAgoMonth}:</b> ${rtYearAgoStr || '—'} ${arrow(p2, false)}<br>
-            ${p2 !== null ? (parseFloat(p2) < 0 ? '✅ שיפור בזמן תגובה' : '⚠️ עלייה בזמן התגובה — בדוק עומס') : ''}`
+      icon:'⏱️', color: parseFloat(p2||p1||0) <= 0 ? 'green' : 'red',
+      title:'זמן תגובה (דיגיטל)', subtitle:`${curMonth} — השוואה חודשית ושנתית`,
+      body:`<b>${curMonth}:</b> <span class="pill ${parseFloat(p2||p1||0)<=0?'green':'red'}">${rtCurStr}</span><br>
+            לעומת <b>${prevMonth}</b> (חודש קודם): ${rtPrevStr || '—'} ${arrow(p1,false)}<br>
+            לעומת <b>${yearAgoMonth}</b> (אשתקד): ${rtYearAgoStr || '—'} ${arrow(p2,false)}<br>
+            ${insightConclusion(p1, p2, false)}`
     });
   }
 
@@ -908,12 +921,12 @@ function renderInsights() {
     const p1 = pctDiff(refCur, refPrev);
     const p2 = pctDiff(refCur, refYearAgo);
     insights.push({
-      icon:'💸', color: parseFloat(p2||0) <= 0 ? 'green' : 'red',
-      title:'ממוצע זיכויים לפניה', subtitle:`${curMonth} — השוואה חודשית`,
-      body:`<b>${curMonth}:</b> <span class="pill ${parseFloat(p2||0)<=0?'green':'red'}">₪${refCur?.toFixed(2)}</span><br>
-            לעומת <b>${prevMonth}:</b> ₪${refPrev?.toFixed(2) || '—'} ${arrow(p1, false)}<br>
-            לעומת <b>${yearAgoMonth}:</b> ₪${refYearAgo?.toFixed(2) || '—'} ${arrow(p2, false)}<br>
-            ${p2 !== null ? (parseFloat(p2) < 0 ? '✅ ירידה בזיכויים — שיפור' : '⚠️ עלייה בזיכויים — בדוק גורמים') : ''}`
+      icon:'💸', color: parseFloat(p2||p1||0) <= 0 ? 'green' : 'red',
+      title:'ממוצע זיכויים לפניה', subtitle:`${curMonth} — השוואה חודשית ושנתית`,
+      body:`<b>${curMonth}:</b> <span class="pill ${parseFloat(p2||p1||0)<=0?'green':'red'}">₪${refCur?.toFixed(2)}</span><br>
+            לעומת <b>${prevMonth}</b> (חודש קודם): ₪${refPrev?.toFixed(2) || '—'} ${arrow(p1,false)}<br>
+            לעומת <b>${yearAgoMonth}</b> (אשתקד): ₪${refYearAgo?.toFixed(2) || '—'} ${arrow(p2,false)}<br>
+            ${insightConclusion(p1, p2, false)}`
     });
   }
 
