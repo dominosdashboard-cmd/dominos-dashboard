@@ -717,7 +717,7 @@ function renderMonthly() {
   const answerVals = mGet('זמינות - תור', 'אחוז מענה');
 
   const orderMokedM = mGet('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)');
-  const orderNetworkM = mGet('הזמנות', 'ממוצע הזמנות משלוח - רשת');
+  const orderNetworkM = mGet('ממוצע הזמנות רשת', 'משלוח בלבד');
   const boVals = mGet('BO', 'כמות קריאות שנסגרה');
   const digitalVals = mGet('דיגיטל', 'כמות קריאות כוללת');
 
@@ -873,9 +873,9 @@ function renderInsights() {
   const orderCur = mVal('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)', lastI);
   const orderPrev = mVal('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)', prevMonthI);
   const orderYearAgo = mVal('הזמנות', 'ממוצע דיגיטל בלבד (משלוח ואיסוף)', yearAgoI);
-  const netCur = mVal('הזמנות', 'ממוצע הזמנות משלוח - רשת', lastI);
-  const netPrev = mVal('הזמנות', 'ממוצע הזמנות משלוח - רשת', prevMonthI);
-  const netYearAgo = mVal('הזמנות', 'ממוצע הזמנות משלוח - רשת', yearAgoI);
+  const netCur = mVal('ממוצע הזמנות רשת', 'משלוח בלבד', lastI);
+  const netPrev = mVal('ממוצע הזמנות רשת', 'משלוח בלבד', prevMonthI);
+  const netYearAgo = mVal('ממוצע הזמנות רשת', 'משלוח בלבד', yearAgoI);
   if(orderCur) {
     const p1 = pctDiff(orderCur, orderPrev);
     const p2 = pctDiff(orderCur, orderYearAgo);
@@ -959,7 +959,7 @@ function switchTab(tab, btn) {
 
 
 // ===== INIT - FETCH FROM GOOGLE SHEETS =====
-const API_URL = 'https://script.google.com/macros/s/AKfycbwmfCO388W-HgQkrBF9ILNluZPMPMj1zSkNNcnjw1TlVin83eOJ0uWcFHaDQVc4gxcn/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx7fJBn0r5ATdYdJWba7bdHSaYVhnfqMUGgHzBKI34hRfuvoK9RtG603WhYrvxrwQNH/exec';
 
 function initDashboard() {
   const lastDate = D.dates[D.dates.length-1];
