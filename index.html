@@ -472,6 +472,7 @@ function renderDaily() {
     { label:'ממוצע הזמנה - מוקד', val:lastVal(orderMoked), prev:prevVal(orderMoked), weekAgo:weekAgoVal(orderMoked), icon:'🍕', color:'red', higher:true },
     { label:'ממוצע הזמנה - רשת', val:lastVal(orderNetwork), prev:prevVal(orderNetwork), weekAgo:weekAgoVal(orderNetwork), icon:'🌐', color:'gold', higher:true },
     { label:'סה"כ פניות ע"י נציג', val:calcRange(totalContacts, startI, endI), prev:prevVal(totalContacts), weekAgo:weekAgoVal(totalContacts), icon:'👤', color:'green', higher:true },
+    { label:'יעילות עובדים', val:lastVal(efficiency), prev:prevVal(efficiency), weekAgo:weekAgoVal(efficiency), icon:'👥', color:'blue', higher:true },
   ];
 
   document.getElementById('daily-kpis').innerHTML = kpiData.map(k => {
