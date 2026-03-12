@@ -968,14 +968,10 @@ function initDashboard() {
   document.getElementById('last-time').textContent = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
   const total = D.dates.length;
   const lastDArr = D.dates[total-1].split('/');
-  const firstDArr = D.dates[Math.max(0,total-30)].split('/');
   const toStr = lastDArr[2]+'-'+lastDArr[1]+'-'+lastDArr[0];
-  const fromStr = firstDArr[2]+'-'+firstDArr[1]+'-'+firstDArr[0];
   document.getElementById('date-to').value = toStr;
-  document.getElementById('date-from').value = fromStr;
-  dateFrom = null;
-  dateTo = null;
-  renderDaily();
+  document.getElementById('date-from').value = toStr;
+  applyDateRange();
 }
 
 // Show loader overlay
