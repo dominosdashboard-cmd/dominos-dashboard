@@ -128,9 +128,49 @@ canvas { width: 100% !important; }
 .insight-body .pill.gold { color: var(--gold); }
 
 @media(max-width:768px){
-  .kpi-grid { grid-template-columns: 1fr 1fr; }
-  .charts-grid { grid-template-columns: 1fr; }
+  body { overflow-x: hidden; }
+
+  /* header */
+  .header { padding: 0 12px; height: auto; min-height: 52px; }
+  .header-inner { flex-wrap: wrap; gap: 4px; padding: 6px 0; }
+  .header img { width: 28px; height: 28px; }
+  .header-meta { font-size: 10px; }
+
+  /* tabs */
+  .main-tabs { padding: 0 4px; overflow-x: auto; white-space: nowrap; gap: 0; }
+  .main-tab { font-size: 11px; padding: 10px 10px; }
+
+  /* content */
+  .content { padding: 12px; }
+
+  /* controls */
+  .controls { flex-wrap: wrap; gap: 8px; }
+  .controls label { font-size: 10px; }
+  .date-input, select, input[type="date"] { font-size: 11px; padding: 6px 8px; }
+  .btn, .btn-outline { font-size: 11px; padding: 6px 10px; }
+
+  /* KPI */
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+  .kpi-card { padding: 12px 10px; }
+  .kpi-val { font-size: 20px !important; }
+  .kpi-icon { font-size: 16px; margin-bottom: 4px; }
+  .kpi-label { font-size: 10px; }
+  .delta-badge { font-size: 9px; padding: 1px 5px; }
+
+  /* גרפים */
+  .charts-grid { grid-template-columns: 1fr; gap: 10px; }
   .insights-grid { grid-template-columns: 1fr; }
+  canvas { max-width: 100%; }
+
+  /* השוואת ימים */
+  .compare-day-selector { gap: 4px; }
+  .day-btn { font-size: 10px; padding: 4px 8px; }
+
+  /* טבלה חודשית */
+  .monthly-table { font-size: 10px; }
+  .monthly-table th, .monthly-table td { padding: 5px 6px; }
+  .monthly-section { padding: 12px; }
+  .monthly-section-title { font-size: 12px; }
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
@@ -173,6 +213,7 @@ input[type="date"] { color-scheme: dark; }
     <span style="font-size:11px;color:var(--sub)">עד:</span>
     <input type="date" id="date-to" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-family:'Heebo';font-size:13px;outline:none;color-scheme:light">
     <button class="btn" onclick="applyDateRange()">🔍 הצג</button>
+    <button class="btn" onclick="exportDaily()" style="background:#16a34a;margin-right:4px">📥 יצוא לאקסל</button>
   </div>
 
   <!-- KPI Cards -->
@@ -235,6 +276,7 @@ input[type="date"] { color-scheme: dark; }
       <option value="12" selected>12 חודשים</option>
       <option value="24">24 חודשים</option>
     </select>
+    <button class="btn" onclick="exportMonthly()" style="background:#16a34a">📥 יצוא לאקסל</button>
   </div>
 
   <!-- Monthly KPI Cards -->
@@ -248,6 +290,7 @@ input[type="date"] { color-scheme: dark; }
   <div style="margin-bottom:20px">
     <div class="chart-title">💡 המלצות ותובנות אוטומטיות</div>
     <div style="font-size:11px;color:var(--sub);margin-top:4px">מחושב על בסיס הנתונים האחרונים</div>
+    <button class="btn" onclick="exportInsights()" style="background:#16a34a;margin-top:10px">📥 יצוא לאקסל</button>
   </div>
   <div class="insights-grid" id="insights-grid"></div>
 </div>
@@ -473,9 +516,52 @@ function renderDaily() {
     { label:'ממוצע הזמנה - רשת', val:lastVal(orderNetwork), prev:prevVal(orderNetwork), weekAgo:weekAgoVal(orderNetwork), icon:'🌐', color:'gold', higher:true },
     { label:'סה"כ פניות ע"י נציג', val:calcRange(totalContacts, startI, endI), prev:prevVal(totalContacts), weekAgo:weekAgoVal(totalContacts), icon:'👤', color:'green', higher:true },
     { label:'יעילות עובדים', val:lastVal(efficiency), prev:prevVal(efficiency), weekAgo:weekAgoVal(efficiency), icon:'👥', color:'blue', higher:true },
+    { label:'שיחות גולשות', val:lastVal(getMetric('שיחות גולשות')), prev:prevVal(getMetric('שיחות גולשות')), weekAgo:weekAgoVal(getMetric('שיחות גולשות')), icon:'📵', color:'red', higher:false },
   ];
 
-  document.getElementById('daily-kpis').innerHTML = kpiData.map(k => {
+  // קוביית שעות מצטבר — מגיליון יומי, סכום לפי חודש הנוכחי
+  const _hoursActual  = getMetric('שעות עבודה בפועל');
+  const _hoursPlanned = getMetric('תכנון שעות עבודה');
+
+  const hoursAccumHTML = (() => {
+    if (!_hoursActual && !_hoursPlanned) return '';
+    // מוצא את החודש של התאריך הנבחר (endI)
+    const selDate = D.dates[endI]; // dd/mm/yyyy
+    if (!selDate) return '';
+    const parts = selDate.split('/');
+    const selYM = parts[2] + '/' + parts[1]; // yyyy/mm
+
+    // סכום כל הימים באותו חודש עד endI
+    let actual = 0, planned = 0;
+    for (let i = 0; i <= endI; i++) {
+      const d = D.dates[i];
+      if (!d) continue;
+      const dp = d.split('/');
+      const ym = dp[2] + '/' + dp[1];
+      if (ym !== selYM) continue;
+      if (_hoursActual && _hoursActual.vals[i] !== null) actual  += (_hoursActual.vals[i]  || 0);
+      if (_hoursPlanned && _hoursPlanned.vals[i] !== null) planned += (_hoursPlanned.vals[i] || 0);
+    }
+
+    const diff = actual - planned;
+    const diffFmt = (diff >= 0 ? '+' : '') + Math.round(diff).toLocaleString('he-IL');
+    const pct = planned > 0 ? ((actual/planned)*100).toFixed(1) : null;
+    const col = diff >= 0 ? '#16a34a' : '#E31837';
+    const monthLabel = parts[1] + '/' + parts[2];
+
+    return `<div class="kpi-card red">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-val" style="font-size:22px">${Math.round(actual).toLocaleString('he-IL')}</div>
+      <div class="kpi-label">שעות מצטבר — ${monthLabel}</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--sub);line-height:1.8">
+        <div>תכנון: <b>${Math.round(planned).toLocaleString('he-IL')}</b></div>
+        ${pct ? `<div>עמידה: <b style="color:${col}">${pct}%</b></div>` : ''}
+        <div>הפרש: <b style="color:${col}">${diffFmt} שעות</b></div>
+      </div>
+    </div>`;
+  })();
+
+  document.getElementById('daily-kpis').innerHTML = (hoursAccumHTML || '') + kpiData.map(k => {
     const v1 = k.isTime ? k.valNum : k.val;
     const p1 = k.isTime ? k.prevNum : k.prev;
     const w1 = k.isTime ? k.weekAgoNum : k.weekAgo;
@@ -733,6 +819,32 @@ function renderMonthly() {
     mkpi('ממוצע הזמנה - רשת', orderNetworkM, '🌐', 'gold', false, true),
     mkpi('קריאות דיגיטל', digitalVals, '💬', 'blue', false, false),
     mkpi('זמן תגובה', responseTimeVals, '⏱️', 'gold', false, false, true),
+    (() => {
+      // שיחות גולשות מצטבר — לפי החודש האחרון בנתונים היומיים
+      const _ov = getMetric('שיחות גולשות');
+      if (!_ov || !D.dates.length) return '';
+      // לוקח לפי החודש הנבחר ב-month picker
+      const MONTHS_MAP = {'ינואר':'01','פברואר':'02','מרץ':'03','אפריל':'04','מאי':'05','יוני':'06','יולי':'07','אוגוסט':'08','ספטמבר':'09','אוקטובר':'10','נובמבר':'11','דצמבר':'12'};
+      const selMonthStr = M.months[selectedI] || '';
+      const mParts = selMonthStr.trim().split(' ');
+      const mm = MONTHS_MAP[mParts[0]] || '00';
+      const yy = '20' + (mParts[1] || '00');
+      const selYM = yy + '/' + mm;
+      let total = 0;
+      for (let i = 0; i < D.dates.length; i++) {
+        const d = D.dates[i]; if (!d) continue;
+        const p = d.split('/'); // dd/mm/yyyy
+        const dYM = p[2] + '/' + p[1];
+        if (dYM !== selYM) continue;
+        if (_ov.vals[i] !== null) total += (_ov.vals[i] || 0);
+      }
+      return `<div class="kpi-card red">
+        <div class="kpi-icon">📵</div>
+        <div class="kpi-val">${Math.round(total).toLocaleString('he-IL')}</div>
+        <div class="kpi-label">שיחות גולשות — ${selMonthStr}</div>
+        <div style="font-size:11px;color:var(--sub);margin-top:4px">סכום חודשי מגיליון יומי</div>
+      </div>`;
+    })(),
   ].join('');
 
   // Sections tables
@@ -945,6 +1057,83 @@ function renderInsights() {
 }
 
 // ===== TAB SWITCHING =====
+
+// ============================================================
+// EXPORT FUNCTIONS
+// ============================================================
+function dlCSV(rows, filename) {
+  const blob = new Blob(['﻿' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function exportDaily() {
+  if (!D) return;
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+  const lines = [`"תקופה: ${from} → ${to}"`, ''];
+
+  // KPI מהגיליון היומי
+  lines.push(['מדד', 'ערך'].join(','));
+  D.metrics.forEach(m => {
+    // מוצא את האינדקס לפי תאריך
+    const vals = [];
+    for (let i = 0; i < D.dates.length; i++) {
+      const d = D.dates[i];
+      if (!d) continue;
+      const dp = d.split('/');
+      const iso = dp[2]+'-'+dp[1]+'-'+dp[0];
+      if (iso >= from && iso <= to && m.vals[i] !== null) vals.push(m.vals[i]);
+    }
+    if (!vals.length) return;
+    const isSum = ['סה"כ שיחות נכנסות','סה"כ שיחות נענות','כמות קריאות כוללת','שעות עבודה בפועל','תכנון שעות עבודה','שעות עבודה נציגים בפועל','סה"כ פניות שטופלו ע"י נציג'].includes(m.name);
+    const val = isSum ? vals.reduce((a,b)=>a+b,0) : vals.reduce((a,b)=>a+b,0)/vals.length;
+    lines.push([`"${m.name}"`, typeof val === 'number' ? Math.round(val*100)/100 : val].join(','));
+  });
+  dlCSV(lines, `נתונים_יומי_${from}_${to}.csv`);
+}
+
+function exportMonthly() {
+  if (!M) return;
+  const selectedI = parseInt(document.getElementById('month-picker').value);
+  const n = parseInt(document.getElementById('month-range').value) || 12;
+  const tableStart = Math.max(0, selectedI - n + 1);
+  const months = [];
+  for (let i = tableStart; i <= selectedI; i++) months.push(M.months[i]);
+
+  const lines = [`"חודש נבחר: ${M.months[selectedI]}"`, ''];
+  lines.push(['מדד', ...months].join(','));
+
+  M.sections.forEach(sec => {
+    if (!sec.metrics.length) return;
+    lines.push(`"${sec.title}"`);
+    sec.metrics.forEach(m => {
+      const vals = [];
+      for (let i = tableStart; i <= selectedI; i++) vals.push(m.vals[i] !== null ? m.vals[i] : '');
+      lines.push([`"${m.name}"`, ...vals].join(','));
+    });
+    lines.push('');
+  });
+  dlCSV(lines, `נתונים_חודשי_${M.months[selectedI]}.csv`);
+}
+
+function exportInsights() {
+  if (!D) return;
+  const insEl = document.getElementById('insights-grid');
+  if (!insEl) return;
+  const lines = [`"תובנות אוטומטיות"`, `"תאריך: ${new Date().toLocaleDateString('he-IL')}"`, '', ['תיוג/מדד','ערך נוכחי','ערך קודם','שינוי %'].join(',')];
+  insEl.querySelectorAll('.insight-card, .insight-item').forEach(card => {
+    const title = card.querySelector('.insight-title, h3, b')?.textContent?.trim() || '';
+    const curr  = card.querySelector('.insight-curr, .curr')?.textContent?.trim() || '';
+    const prev  = card.querySelector('.insight-prev, .prev')?.textContent?.trim() || '';
+    const pct   = card.querySelector('.insight-pct, .pct, .delta')?.textContent?.trim() || '';
+    if (title) lines.push([`"${title}"`, curr, prev, pct].join(','));
+  });
+  dlCSV(lines, `תובנות_${new Date().toLocaleDateString('he-IL').replace(/\//g,'-')}.csv`);
+}
+
 function switchTab(tab, btn) {
   document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
