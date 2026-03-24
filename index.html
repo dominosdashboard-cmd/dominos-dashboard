@@ -97,6 +97,11 @@ canvas { width: 100% !important; }
 
 /* MONTHLY SECTIONS */
 .monthly-section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+.monthly-view-toggle { display:flex; gap:6px; margin-bottom:12px; }
+.monthly-view-btn { padding:4px 14px; border-radius:20px; border:1px solid var(--border); background:var(--card); color:var(--sub); font-family:'Heebo'; font-size:12px; cursor:pointer; transition:all 0.15s; }
+.monthly-view-btn.active { background:#0033A0; color:#fff; border-color:#0033A0; font-weight:700; }
+.monthly-charts-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+@media(max-width:700px){ .monthly-charts-grid { grid-template-columns:1fr; } }
 .monthly-section-title { font-size: 13px; font-weight: 900; color: #212529; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
 .monthly-table { width: 100%; border-collapse: collapse; font-size: 12px; overflow-x: auto; display: block; }
 .monthly-table th { text-align: center; padding: 8px 10px; color: var(--sub); font-weight: 700; border-bottom: 1px solid var(--border); white-space: nowrap; font-size: 11px; }
@@ -353,7 +358,7 @@ const DAY_HEB = ['ראשון','שני','שלישי','רביעי','חמישי','�
 let rangeLen = 30;
 
 // SUM vs AVG metrics
-const SUM_METRICS = new Set(['סה"כ שיחות נכנסות','סה"כ שיחות נענות','כמות קריאות כוללת','שעות עבודה בפועל','תכנון שעות עבודה','שעות עבודה נציגים בפועל','סה"כ פניות שטופלו ע"י נציג','שיחות גולשות']);
+const SUM_METRICS = new Set(['סה"כ שיחות נכנסות','סה"כ שיחות נענות','כמות קריאות כוללת','שעות עבודה בפועל','תכנון שעות עבודה','שעות עבודה נציגים בפועל','סה"כ פניות שטופלו ע"י נציג']);
 
 function timeToMinutes(t) {
   if(typeof t !== 'string') return null;
@@ -369,9 +374,16 @@ function minutesToTime(m) {
 
 const TIME_METRICS = new Set(['ממוצע זמן תגובה']);
 
+function isTimeMetricByVal(m) {
+  // detect time metric by checking if first non-null value looks like HH:MM
+  if(!m || !m.vals) return false;
+  const v = m.vals.find(x => x !== null && x !== undefined);
+  return typeof v === 'string' && v.length >= 5 && v[2] === ':';
+}
+
 function calcRange(m, from, to) {
   if(!m) return null;
-  const isTime = TIME_METRICS.has(m.name.trim());
+  const isTime = TIME_METRICS.has(m.name.trim()) || isTimeMetricByVal(m);
   const vals = [];
   for(let i = from; i <= to && i < m.vals.length; i++) {
     const v = m.vals[i];
@@ -489,7 +501,7 @@ function makeChart(id, type, labels, datasets, options={}) {
     data: { labels, datasets },
     options: {
       responsive: true,
-      plugins: { legend: { display: datasets.length > 1, labels: { color:'#666', font:{size:11} } }, tooltip: { mode:'index', intersect:false } },
+      plugins: { legend: { display: datasets.length > 1, labels: { color:'#666', font:{size:11} } }, tooltip: { mode:'index', intersect:false, callbacks: options.ttCb || {} } },
       scales: {
         x: { ticks:{ color:'#444', maxRotation:45, font:{size:10}, maxTicksLimit:15 }, grid:{ color:'#111' } },
         y: { ticks:{ color:'#444', font:{size:11} }, grid:{ color:'#111' }, ...options.y }
@@ -789,6 +801,15 @@ function initMonthPicker() {
   });
 }
 
+function switchMonthView(secId, mode, btn) {
+  // Toggle buttons
+  btn.closest('.monthly-view-toggle').querySelectorAll('.monthly-view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Toggle views
+  document.getElementById(secId + '-table').style.display = mode === 'table' ? '' : 'none';
+  document.getElementById(secId + '-chart').style.display = mode === 'chart' ? '' : 'none';
+}
+
 function renderMonthly() {
   if(!M) return;
   const n = parseInt(document.getElementById('month-range').value);
@@ -819,14 +840,20 @@ function renderMonthly() {
     const curr = vals ? vals[selectedI] : null;
     const p = vals ? vals[prevI] : null;
     const ya = vals ? vals[yearAgoI] : null;
-    const vn = isTime ? timeToMinutes(curr) : curr;
-    const pn = isTime ? timeToMinutes(p) : p;
-    const yn = isTime ? timeToMinutes(ya) : ya;
+    // auto-detect time by value format
+    const _isTime = isTime || (typeof curr === 'string' && curr.length >= 5 && curr[2] === ':');
+    const vn = _isTime ? timeToMinutes(curr) : curr;
+    const pn = _isTime ? timeToMinutes(p) : p;
+    const yn = _isTime ? timeToMinutes(ya) : ya;
     const d1 = delta(vn, pn, higherBetter);
     const d2 = delta(vn, yn, higherBetter);
-    const display = curr === null ? '—' : isTime ? (typeof curr==='string'?curr:fmt(curr,'time')) : isPct ? fmt(curr,'pct') : fmt(curr);
+    const display = curr === null ? '—' : _isTime ? (typeof curr==='string'?curr:fmt(curr,'time')) : isPct ? fmt(curr,'pct') : fmt(curr);
     const prevMonth = M.months[prevI] || '';
     const yearAgoMonth = M.months[yearAgoI] || '';
+    const pDisplay = p === null ? '' : _isTime ? (typeof p==='string'?p:fmt(p,'time')) : isPct ? fmt(p,'pct') : fmt(p);
+    const yaDisplay = ya === null ? '' : _isTime ? (typeof ya==='string'?ya:fmt(ya,'time')) : isPct ? fmt(ya,'pct') : fmt(ya);
+    const prevLine = d1 && pDisplay ? `<div style="font-size:10px;color:var(--sub);margin-top:1px">${prevMonth}: <b>${pDisplay}</b></div>` : '';
+    const yaLine = d2 && yaDisplay ? `<div style="font-size:10px;color:var(--sub);margin-top:1px">${yearAgoMonth}: <b>${yaDisplay}</b></div>` : '';
     return `<div class="kpi-card ${color}">
       <div class="kpi-icon">${icon}</div>
       <div class="kpi-val">${display}</div>
@@ -835,6 +862,7 @@ function renderMonthly() {
         ${deltaHTML(d1, 'מ'+prevMonth)}
         ${deltaHTML(d2, 'מ'+yearAgoMonth)}
       </div>
+      ${prevLine}${yaLine}
     </div>`;
   }
 
@@ -894,12 +922,25 @@ function renderMonthly() {
   const el = document.getElementById('monthly-sections');
   el.innerHTML = '';
 
-  M.sections.forEach(sec => {
+  const CHART_COLORS = ['#E31837','#0033A0','#f59e0b','#16a34a','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#0284c7'];
+
+  M.sections.forEach((sec, secIdx) => {
     if(!sec.metrics.length) return;
     const div = document.createElement('div');
     div.className = 'monthly-section';
+    const secId = 'msec-' + secIdx;
 
-    let html = `<div class="monthly-section-title">${sec.title}</div>`;
+    // Header + toggle buttons
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px">
+      <div class="monthly-section-title" style="margin-bottom:0;border-bottom:none;padding-bottom:0">${sec.title}</div>
+      <div class="monthly-view-toggle">
+        <button class="monthly-view-btn active" onclick="switchMonthView('${secId}','table',this)">📋 טבלה</button>
+        <button class="monthly-view-btn" onclick="switchMonthView('${secId}','chart',this)">📈 גרף</button>
+      </div>
+    </div>`;
+
+    // Table view
+    html += `<div id="${secId}-table">`;
     html += '<div style="overflow-x:auto"><table class="monthly-table"><thead><tr><th>מדד</th>';
     months.forEach(m => { html += `<th>${m}</th>`; });
     html += '</tr></thead><tbody>';
@@ -908,25 +949,82 @@ function renderMonthly() {
       const vals = monthSlice(metric.vals);
       const lastVal = vals[vals.length-1];
       const prevVal = vals[vals.length-2];
-      const yearAgoVal = metric.vals[metric.vals.length-1-12];
 
       html += '<tr>';
       html += `<td>${metric.name}</td>`;
       vals.forEach((v, vi) => {
         const isLast = vi === vals.length-1;
-        const isPrev = vi === vals.length-2;
         let cls = isLast ? 'current' : '';
         let d = isLast ? delta(v, prevVal, true) : null;
         let arrow = '';
-        if(d) arrow = `<span class="trend-arrow">${d.up ? (d.good?'↑':'↑'):'↓'}</span>`;
-        html += `<td class="${cls}">${arrow}${v === null ? '—' : typeof v === 'number' && v < 1 && v > 0 ? fmt(v,'pct') : fmt(v)}</td>`;
+        if(d) arrow = `<span class="trend-arrow">${d.up ? '↑':'↓'}</span>`;
+        const isTimeFmt = typeof v === 'string' && /^\d{2}:\d{2}/.test(v);
+        const isPctFmt = typeof v === 'number' && v > 0 && v <= 1 && metric.name && (metric.name.includes('אחוז') || metric.name.includes('%') || metric.name.includes('יעילות'));
+        const cellDisplay = v === null ? '—' : isTimeFmt ? v : isPctFmt ? fmt(v,'pct') : fmt(v);
+        html += `<td class="${cls}">${arrow}${cellDisplay}</td>`;
       });
       html += '</tr>';
     });
+    html += '</tbody></table></div></div>';
 
-    html += '</tbody></table></div>';
+    // Charts view (hidden by default)
+    html += `<div id="${secId}-chart" style="display:none"><div class="monthly-charts-grid">`;
+    sec.metrics.forEach((metric, mi) => {
+      html += `<div style="background:var(--bg);border-radius:10px;padding:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">${metric.name}</div>
+        <canvas id="${secId}-chart-${mi}" height="140"></canvas>
+      </div>`;
+    });
+    html += '</div></div>';
+
     div.innerHTML = html;
     el.appendChild(div);
+
+    // Build charts (will render when visible)
+    sec.metrics.forEach((metric, mi) => {
+      const vals = monthSlice(metric.vals);
+      const color = CHART_COLORS[mi % CHART_COLORS.length];
+      setTimeout(() => {
+        const canvas = document.getElementById(`${secId}-chart-${mi}`);
+        if(!canvas) return;
+        const isTimeMetric = vals.some(v => typeof v === 'string' && v.length >= 5 && v[2] === ':');
+        const isPctMetric = metric.name && (metric.name.includes('אחוז') || metric.name.includes('%') || metric.name.includes('יעילות'));
+        const chartData = vals.map(v => {
+          if(v === null) return null;
+          if(typeof v === 'string' && v.length >= 5 && v[2] === ':') return timeToMinutes(v);
+          if(typeof v === 'number') return isPctMetric ? parseFloat((v*100).toFixed(1)) : v;
+          return null;
+        });
+        // helper: minutes (with decimals for seconds) → HH:MM:SS
+        function minsToHMS(v) {
+          const totalSec = Math.round(v * 60);
+          const h = Math.floor(totalSec / 3600);
+          const m = Math.floor((totalSec % 3600) / 60);
+          const s = totalSec % 60;
+          return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        }
+        makeChart(`${secId}-chart-${mi}`, 'line', months, [{
+          label: metric.name,
+          data: chartData,
+          borderColor: color,
+          backgroundColor: color + '22',
+          tension: 0.4, borderWidth: 2, pointRadius: 3, fill: true,
+        }], { 
+          spanGaps: true,
+          y: { ticks: { callback: function(v) { 
+            if(isTimeMetric) return minsToHMS(v);
+            if(isPctMetric) return v+'%';
+            return v;
+          }}},
+          ttCb: { label: function(ctx) {
+            const v = ctx.parsed.y;
+            if(isTimeMetric) return ' ' + metric.name + ': ' + minsToHMS(v);
+            if(isPctMetric) return ' ' + metric.name + ': ' + v + '%';
+            return ' ' + metric.name + ': ' + v;
+          }}
+        });
+      }, 50);
+    });
   });
 }
 
